@@ -25,74 +25,105 @@ public class Program
             .Status()
             .StartAsync("Loading cities...", _ => repository.GetCitiesAsync());
 
-        Table table = new Table().AddColumns("Id", "City", "State", "Country", "Latitude", "Longitude");
-        foreach (City city in cities)
+        bool continuePrompt;
+
+        do
         {
-            State? state = city.State;
-            Country? country = state?.Country;
+            AnsiConsole.Clear();
+            AnsiConsole.Write(new Rule("[bold yellow]Landmark Search[/]").LeftJustified());
 
-            double latitude = city.CityCentre.Latitude;
-            double longitude = city.CityCentre.Longitude;
 
-            table.AddRow(
-                $"{city.CityId}",
-                city.Description,
-                state?.Description ?? string.Empty,
-                country?.Description ?? string.Empty,
-                $"{latitude}",
-                $"{longitude}"
+            Table table = new Table().AddColumns(
+                "Id",
+                "City",
+                "State",
+                "Country",
+                "Latitude",
+                "Longitude"
             );
-        }
+            foreach (City city in cities)
+            {
+                State? state = city.State;
+                Country? country = state?.Country;
 
-        AnsiConsole.Write(table);
+                double latitude = city.CityCentre.Latitude;
+                double longitude = city.CityCentre.Longitude;
 
-        int selectedCityId = AnsiConsole.Ask<int>("Enter the [green]city id[/] to inspect:");
-        double radiusInKilometers = AnsiConsole.Ask<double>(
-            "Enter the search [green]radius (km)[/]:"
-        );
+                table.AddRow(
+                    $"{city.CityId}",
+                    city.Description,
+                    state?.Description ?? string.Empty,
+                    country?.Description ?? string.Empty,
+                    $"{latitude}",
+                    $"{longitude}"
+                );
+            }
 
-        City? selectedCity = await repository.GetCityByIdAsync(selectedCityId);
+            AnsiConsole.Write(table);
+            AnsiConsole.WriteLine();
 
-        if (selectedCity is null)
-        {
-            AnsiConsole.MarkupLine($"[red]No city found with id {selectedCityId}.[/]");
-            return;
-        }
+            int selectedCityId = AnsiConsole.Ask<int>("Enter the [green]city id[/] to inspect:");
+            double radiusInKilometers = AnsiConsole.Ask<double>(
+                "Enter the search [green]radius (km)[/]:"
+            );
+            City? selectedCity = await repository.GetCityByIdAsync(selectedCityId);
 
-        List<Landmark> landmarksInRadius = await AnsiConsole
-            .Status()
-            .StartAsync(
-                "Searching for landmarks...",
-                _ => repository.GetLandmarkInRadius(
-                    selectedCity.CityCentre.Latitude,
-                    selectedCity.CityCentre.Longitude,
-                    radiusInKilometers * 1000
-                )
+            if (selectedCity is null)
+            {
+                AnsiConsole.MarkupLine($"[red]No city found with id {selectedCityId}.[/]");
+                continuePrompt = AnsiConsole.Confirm("Do you want to search for another city?");
+                continue;
+            }
+
+            List<Landmark> landmarksInRadius = await AnsiConsole
+                .Status()
+                .StartAsync(
+                    "Searching for landmarks...",
+                    _ =>
+                        repository.GetLandmarkInRadius(
+                            selectedCity.CityCentre.Latitude,
+                            selectedCity.CityCentre.Longitude,
+                            radiusInKilometers * 1000
+                        )
+                );
+
+            AnsiConsole.Clear();
+
+            AnsiConsole.Write(
+                new Rule($"[bold yellow]{selectedCity.Description}[/] {selectedCity.CityCentre}").LeftJustified()
+            );
+            AnsiConsole.WriteLine();
+
+            if (landmarksInRadius.Count == 0)
+            {
+                AnsiConsole.MarkupLine(
+                    $"[grey]No landmarks found within {radiusInKilometers} km.[/]"
+                );
+                continuePrompt = AnsiConsole.Confirm("Do you want to search for another city?");
+                continue;
+            }
+
+            AnsiConsole.MarkupLine(
+                $"[grey]{landmarksInRadius.Count} landmark(s) found within {radiusInKilometers} km.[/]"
             );
 
-        AnsiConsole.Write(new Rule($"[bold yellow]{selectedCity.Description}[/]").LeftJustified());
-        AnsiConsole.WriteLine();
+            Table landmarksTable = new Table()
+                .AddColumn(new TableColumn("[italic]Landmark[/]").LeftAligned())
+                .AddColumn(new TableColumn("[italic]Coordinates[/]").LeftAligned())
+                .AddColumn(new TableColumn("[italic]Distance to Centre[/]").LeftAligned());
 
-        if (landmarksInRadius.Count == 0)
-        {
-            AnsiConsole.MarkupLine($"[grey]No landmarks found within {radiusInKilometers} km.[/]");
-            return;
-        }
+            foreach (Landmark landmark in landmarksInRadius.OrderBy(l => l.DistanceToCityCentre))
+            {
+                landmarksTable.AddRow(
+                    Markup.Escape(landmark.Description),
+                    $"{landmark.Location.Latitude:F6}, {landmark.Location.Longitude:F6}",
+                    $"{landmark.DistanceToCityCentre / 1000:F2} km"
+                );
+            }
 
-        Table landmarksTable = new Table()
-            .AddColumn(new TableColumn("[italic]Landmark[/]").LeftAligned())
-            .AddColumn(new TableColumn("[italic]Coordinates[/]").LeftAligned())
-            .AddColumn(new TableColumn("[italic]Distance to Centre[/]").LeftAligned());
+            AnsiConsole.Write(landmarksTable);
 
-        foreach (Landmark landmark in landmarksInRadius.OrderBy(l => l.DistanceToCityCentre))
-        {
-            landmarksTable.AddRow(
-                Markup.Escape(landmark.Description),
-                $"{landmark.Location.Latitude:F6}, {landmark.Location.Longitude:F6}",
-                $"{landmark.DistanceToCityCentre / 1000:F2} km"
-            );
-        }
-
-        AnsiConsole.Write(landmarksTable);
+            continuePrompt = AnsiConsole.Confirm("Do you want to search for another city?");
+        } while (continuePrompt);
     }
 }
