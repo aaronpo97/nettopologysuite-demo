@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Domain\Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Sql\GetCities.sql"/>
+        <EmbeddedResource Include="Sql\GetCityById.sql"/>
+        <EmbeddedResource Include="Sql\GetLandmarkInRadius.sql"/>
+        <EmbeddedResource Include="Sql\GetLandmarks.sql"/>
+        <EmbeddedResource Include="Sql\schema.sql"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NetTopologySuite" Version="2.6.0"/>
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2"/>
+        <PackageReference Include="Dapper" Version="2.1.79"/>
+        <PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0"/>
+    </ItemGroup>
+</Project>
