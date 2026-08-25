@@ -32,7 +32,6 @@ public class Program
             AnsiConsole.Clear();
             AnsiConsole.Write(new Rule("[bold yellow]Landmark Search[/]").LeftJustified());
 
-
             Table table = new Table().AddColumns(
                 "Id",
                 "City",
@@ -63,10 +62,13 @@ public class Program
             AnsiConsole.WriteLine();
 
             int selectedCityId = AnsiConsole.Ask<int>("Enter the [green]city id[/] to inspect:");
-            double radiusInKilometers = AnsiConsole.Ask<double>(
-                "Enter the search [green]radius (km)[/]:"
-            );
-            City? selectedCity = await repository.GetCityByIdAsync(selectedCityId);
+
+            City? selectedCity = await AnsiConsole
+                .Status()
+                .StartAsync(
+                    "Searching for city...",
+                    _ => repository.GetCityByIdAsync(selectedCityId)
+                );
 
             if (selectedCity is null)
             {
@@ -74,6 +76,20 @@ public class Program
                 continuePrompt = AnsiConsole.Confirm("Do you want to search for another city?");
                 continue;
             }
+            bool confirm = AnsiConsole.Confirm(
+                $"You selected city: [green]{selectedCity.Description}[/], is that correct?"
+            );
+
+            if (!confirm)
+            {
+                continuePrompt = true;
+                continue;
+            }
+
+
+            double radiusInKilometers = AnsiConsole.Ask<double>(
+                "Enter the search [green]radius (km)[/]:"
+            );
 
             List<Landmark> landmarksInRadius = await AnsiConsole
                 .Status()
@@ -90,7 +106,9 @@ public class Program
             AnsiConsole.Clear();
 
             AnsiConsole.Write(
-                new Rule($"[bold yellow]{selectedCity.Description}[/] {selectedCity.CityCentre}").LeftJustified()
+                new Rule(
+                    $"[bold yellow]{selectedCity.Description}[/] {selectedCity.CityCentre}"
+                ).LeftJustified()
             );
             AnsiConsole.WriteLine();
 

@@ -13,7 +13,8 @@ public interface IRepository
     Task<List<Landmark>> GetLandmarkInRadius(
         double latitude,
         double longitude,
-        double radiusInMeters);
+        double radiusInMeters
+    );
 }
 
 public sealed class SqlRepository(string connectionString) : IRepository
@@ -108,7 +109,7 @@ public sealed class SqlRepository(string connectionString) : IRepository
                 Latitude = latitude,
                 Longitude = longitude,
                 Srid,
-                RadiusInMeters = radiusInMeters
+                RadiusInMeters = radiusInMeters,
             },
             splitOn: "city_id"
         );
