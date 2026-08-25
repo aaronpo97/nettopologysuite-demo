@@ -130,7 +130,7 @@ public class Program
                 .AddColumn(new TableColumn("[italic]Coordinates[/]").LeftAligned())
                 .AddColumn(new TableColumn("[italic]Distance to Centre[/]").LeftAligned());
 
-            foreach (Landmark landmark in landmarksInRadius.OrderBy(l => l.DistanceToCityCentre))
+            foreach (Landmark landmark in landmarksInRadius)
             {
                 landmarksTable.AddRow(
                     Markup.Escape(landmark.Description),
